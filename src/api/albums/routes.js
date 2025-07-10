@@ -46,6 +46,7 @@ const routes = (handler) => [
         allow: "multipart/form-data",
         multipart: true,
         output: "stream",
+        parse: true,
         maxBytes: 512000, // 500 KB
         failAction: (request, h, err) => {
           throw err;

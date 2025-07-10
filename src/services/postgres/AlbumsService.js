@@ -66,7 +66,7 @@ class AlbumsService {
       id: album.id,
       name: album.name,
       year: album.year,
-      coverUrl: album.cover_url ?? null,
+      coverUrl: album.cover_url ?? "",
       songs: songsResult.rows,
     };
   }
@@ -163,7 +163,7 @@ class AlbumsService {
       // 🔍 Cek dari cache Redis dulu
       const result = await this._cacheService.get(`album_likes:${albumId}`);
       return {
-        likes: JSON.parse(result),
+        likes: parseInt(result, 10),
         source: "cache",
       };
     } catch (error) {
@@ -177,11 +177,7 @@ class AlbumsService {
       const likes = parseInt(result.rows[0].likes, 10);
 
       // 💾 Simpan ke Redis selama 30 menit (1800 detik)
-      await this._cacheService.set(
-        `album_likes:${albumId}`,
-        JSON.stringify(likes),
-        1800
-      );
+      await this._cacheService.set(`album_likes:${albumId}`, likes, 1800);
 
       return {
         likes,
