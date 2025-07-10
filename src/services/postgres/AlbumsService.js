@@ -65,7 +65,7 @@ class AlbumsService {
       id: album.id,
       name: album.name,
       year: album.year,
-      coverUrl: album.cover_url || null, // ini wajib ditampilkan
+      coverUrl: album.cover_url ?? "",
       songs: songsResult.rows,
     };
   }
@@ -152,16 +152,29 @@ class AlbumsService {
   }
 
   async getAlbumLikes(albumId) {
-    const query = {
-      text: "SELECT COUNT(*) AS likes FROM user_album_likes WHERE album_id = $1",
-      values: [albumId],
-    };
+    try {
+      const result = await this._cacheService.get(`album_likes:${albumId}`);
+      return {
+        likes: parseInt(result, 10),
+        source: "cache",
+      };
+    } catch (error) {
+      const query = {
+        text: "SELECT COUNT(*) AS likes FROM user_album_likes WHERE album_id = $1",
+        values: [albumId],
+      };
 
-    const result = await this._pool.query(query);
-    return {
-      likes: parseInt(result.rows[0].likes, 10),
-      source: "db",
-    };
+      const result = await this._pool.query(query);
+      const likes = parseInt(result.rows[0].likes, 10);
+
+      // Simpan ke cache
+      await this._cacheService.set(`album_likes:${albumId}`, likes);
+
+      return {
+        likes,
+        source: "db",
+      };
+    }
   }
 }
 
