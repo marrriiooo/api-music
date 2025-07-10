@@ -20,6 +20,7 @@
         "@hapi/hapi": "^21.3.2",
         "@hapi/joi": "^17.1.1",
         "@hapi/jwt": "^3.2.0",
+        "amqplib": "^0.10.8",
         "auto-bind": "^4.0.0",
         "bcrypt": "^6.0.0",
         "dotenv": "^16.3.1",

@@ -27,6 +27,7 @@ const ExportsValidator = require("./validator/exports");
 
 // exports
 const ExportsPlugin = require("./api/exports");
+const ProducerService = require("./services/rabbitmq/ProducerService");
 
 // tokenize
 const TokenManager = require("./tokenize/TokenManager");
