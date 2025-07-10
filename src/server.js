@@ -2,6 +2,8 @@ require("dotenv").config();
 
 const Hapi = require("@hapi/hapi");
 const Jwt = require("@hapi/jwt");
+const Inert = require("@hapi/inert");
+const path = require("path");
 
 // albums dan songs
 const albums = require("./api/albums");
@@ -66,6 +68,7 @@ const init = async () => {
     {
       plugin: Jwt,
     },
+    Inert,
   ]);
 
   // mendefinisikan strategy autentikasi jwt
@@ -83,6 +86,17 @@ const init = async () => {
         id: artifacts.decoded.payload.id,
       },
     }),
+  });
+  // Route untuk melayani file static cover
+  server.route({
+    method: "GET",
+    path: "/cover/images/{param*}",
+    handler: {
+      directory: {
+        path: path.resolve(__dirname, "cover/images"), // pastikan sesuai folder
+        listing: false,
+      },
+    },
   });
 
   await server.register([

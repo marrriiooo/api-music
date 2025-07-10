@@ -2,10 +2,10 @@ const autoBind = require("auto-bind");
 const ClientError = require("../../exceptions/ClientError");
 
 class AlbumsHandler {
-  constructor(service, validator, storageService) {
+  constructor(service, storageService, validator) {
     this._service = service;
-    this._validator = validator;
     this._storageService = storageService;
+    this._validator = validator;
 
     autoBind(this);
   }
@@ -71,7 +71,7 @@ class AlbumsHandler {
     const filename = await this._storageService.writeFile(cover, cover.hapi);
     const fileLocation = `http://${process.env.HOST}:${process.env.PORT}/cover/images/${filename}`;
 
-    await this._service.addCoverAlbumById(id, fileLocation); // ✅
+    await this._service.addCoverAlbumById(id, fileLocation);
 
     return h
       .response({
@@ -80,6 +80,7 @@ class AlbumsHandler {
       })
       .code(201);
   }
+
   async postAlbumLikeHandler(request, h) {
     const { id: userId } = request.auth.credentials;
     const { id: albumId } = request.params;

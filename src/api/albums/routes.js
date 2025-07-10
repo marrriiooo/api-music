@@ -43,16 +43,16 @@ const routes = (handler) => [
     handler: handler.postUploadCoverHandler,
     options: {
       payload: {
-        allow: "multipart/form-data",
+        allow: ["multipart/form-data"],
         multipart: true,
         output: "stream",
         parse: true,
-        maxBytes: 512000, // 500 KB
+        maxBytes: 512000,
         failAction: (request, h, err) => {
-          throw err;
+          throw new ClientError(`Payload error: ${err.message}`, 413); // Lebih informatif
         },
       },
-      auth: false, // atau sesuaikan dengan kebutuhan
+      auth: false, // ✔️ kalau memang belum perlu login
     },
   },
 ];
