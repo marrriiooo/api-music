@@ -64,13 +64,22 @@ class AlbumsHandler {
     const { cover } = request.payload;
     const { id } = request.params;
 
-    if (!cover.hapi.headers["content-type"].startsWith("image/")) {
-      throw new ClientError("Tipe file harus gambar", 400);
+    // Validasi MIME type gambar
+    const contentType = cover.hapi.headers["content-type"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(contentType)) {
+      // Melempar error umum, ditangani oleh global handler
+      const error = new Error("Tipe file harus berupa gambar jpg/png/webp");
+      error.statusCode = 400;
+      throw error;
     }
 
+    // Simpan file dan buat URL akses
     const filename = await this._storageService.writeFile(cover, cover.hapi);
-    const fileLocation = `http://${process.env.HOST}:${process.env.PORT}/cover/images/${filename}`;
+    const fileLocation = `${process.env.BASE_URL}/cover/images/${filename}`;
 
+    // Simpan lokasi sampul di album
     await this._service.addCoverAlbumById(id, fileLocation);
 
     return h

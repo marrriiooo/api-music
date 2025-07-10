@@ -67,7 +67,6 @@ class AlbumsService {
       name: album.name,
       year: album.year,
       coverUrl: album.cover_url ?? null,
-
       songs: songsResult.rows,
     };
   }

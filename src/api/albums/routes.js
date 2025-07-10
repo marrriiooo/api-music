@@ -23,20 +23,23 @@ const routes = (handler) => [
     method: "POST",
     path: "/albums/{id}/likes",
     handler: handler.postAlbumLikeHandler,
-    options: { auth: "openmusic_jwt" },
+    options: {
+      auth: "openmusic_jwt",
+    },
   },
   {
     method: "DELETE",
     path: "/albums/{id}/likes",
     handler: handler.deleteAlbumLikeHandler,
-    options: { auth: "openmusic_jwt" },
+    options: {
+      auth: "openmusic_jwt",
+    },
   },
   {
     method: "GET",
     path: "/albums/{id}/likes",
     handler: handler.getAlbumLikesHandler,
   },
-
   {
     method: "POST",
     path: "/albums/{id}/covers",
@@ -49,10 +52,11 @@ const routes = (handler) => [
         parse: true,
         maxBytes: 512000,
         failAction: (request, h, err) => {
-          throw new ClientError(`Payload error: ${err.message}`, 413); // Lebih informatif
+          console.error("Upload error:", err.message);
+          throw err;
         },
       },
-      auth: false, // ✔️ kalau memang belum perlu login
+      auth: false,
     },
   },
 ];
