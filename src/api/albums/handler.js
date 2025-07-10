@@ -1,5 +1,6 @@
 const autoBind = require("auto-bind");
 const ClientError = require("../../exceptions/ClientError");
+const InvariantError = require("../../exceptions/InvariantError");
 
 class AlbumsHandler {
   constructor(service, storageService, validator) {
@@ -69,10 +70,7 @@ class AlbumsHandler {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(contentType)) {
-      // Melempar error umum, ditangani oleh global handler
-      const error = new Error("Tipe file harus berupa gambar jpg/png/webp");
-      error.statusCode = 400;
-      throw error;
+      throw new InvariantError("Anda sudah menyukai album ini");
     }
 
     // Simpan file dan buat URL akses
@@ -94,7 +92,7 @@ class AlbumsHandler {
     const { id: userId } = request.auth.credentials;
     const { id: albumId } = request.params;
 
-    await this._service.verifyAlbumExists(albumId); // pastikan album ada
+    await this._service.verifyAlbumExists(albumId);
     await this._service.addAlbumLike(userId, albumId);
 
     return h

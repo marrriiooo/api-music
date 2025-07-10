@@ -66,7 +66,7 @@ class AlbumsService {
       id: album.id,
       name: album.name,
       year: album.year,
-      coverUrl: album.cover_url ?? null,
+      coverUrl: album.cover ?? null,
       songs: songsResult.rows,
     };
   }
@@ -98,7 +98,7 @@ class AlbumsService {
   }
   async addCoverAlbumById(id, coverUrl) {
     const query = {
-      text: "UPDATE albums SET cover_url = $1 WHERE id = $2 RETURNING id",
+      text: "UPDATE albums SET cover = $1 WHERE id = $2 RETURNING id",
       values: [coverUrl, id],
     };
 
