@@ -1,9 +1,10 @@
-const autoBind = require('auto-bind');
+const autoBind = require("auto-bind");
 
 class AlbumsHandler {
-  constructor(service, validator) {
+  constructor(service, validator, storageService) {
     this._service = service;
     this._validator = validator;
+    this._storageService = storageService;
 
     autoBind(this);
   }
@@ -15,8 +16,8 @@ class AlbumsHandler {
     const albumId = await this._service.addAlbum({ name, year });
 
     const response = h.response({
-      status: 'success',
-      message: 'Album berhasil ditambahkan',
+      status: "success",
+      message: "Album berhasil ditambahkan",
       data: {
         albumId,
       },
@@ -30,7 +31,7 @@ class AlbumsHandler {
     const album = await this._service.getAlbumWithSongs(id);
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         album,
       },
@@ -44,8 +45,8 @@ class AlbumsHandler {
     await this._service.editAlbumById(id, request.payload);
 
     return {
-      status: 'success',
-      message: 'Album berhasil diperbarui',
+      status: "success",
+      message: "Album berhasil diperbarui",
     };
   }
 
@@ -54,9 +55,29 @@ class AlbumsHandler {
     await this._service.deleteAlbumById(id);
 
     return {
-      status: 'success',
-      message: 'Album berhasil dihapus',
+      status: "success",
+      message: "Album berhasil dihapus",
     };
+  }
+  async postUploadCoverHandler(request, h) {
+    const { cover } = request.payload;
+    const { id } = request.params;
+
+    if (!cover.hapi.headers["content-type"].startsWith("image/")) {
+      throw new ClientError("Tipe file harus gambar", 400);
+    }
+
+    const filename = await this._storageService.writeFile(cover, cover.hapi);
+    const fileLocation = `http://${process.env.HOST}:${process.env.PORT}/cover/images/${filename}`;
+
+    await this._service.addCoverAlbumById(id, fileLocation); // ✅
+
+    return h
+      .response({
+        status: "success",
+        message: "Sampul berhasil diunggah",
+      })
+      .code(201);
   }
 }
 

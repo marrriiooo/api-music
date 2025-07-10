@@ -24,6 +24,7 @@ const UsersValidator = require("./validator/users");
 const AuthenticationsValidator = require("./validator/authentications");
 const PlaylistsValidator = require("./validator/playlists");
 const ExportsValidator = require("./validator/exports");
+const AlbumsValidator = require("./validator/albums");
 
 // exports
 const ExportsPlugin = require("./api/exports");
@@ -35,12 +36,16 @@ const TokenManager = require("./tokenize/TokenManager");
 // exceptions
 const ClientError = require("./exceptions/ClientError");
 
+// storege
+const StorageService = require("./services/storage/StorageService");
+
 const init = async () => {
   const playlistsService = new PlaylistsService(); // tanpa collaborationsService
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
+  const storageService = new StorageService();
 
   const server = Hapi.server({
     port: process.env.PORT || 5000,
@@ -81,6 +86,8 @@ const init = async () => {
       plugin: albums,
       options: {
         service: albumsService,
+        storageService: storageService,
+        validator: AlbumsValidator,
       },
     },
     {
