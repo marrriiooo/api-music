@@ -4,8 +4,9 @@ const InvariantError = require("../../exceptions/InvariantError");
 const NotFoundError = require("../../exceptions/NotFoundError");
 
 class AlbumsService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addAlbum({ name, year }) {
@@ -65,7 +66,7 @@ class AlbumsService {
       id: album.id,
       name: album.name,
       year: album.year,
-      coverUrl: album.cover_url || null, // ini wajib ditampilkan
+      coverUrl: album.cover_url ?? null,
       songs: songsResult.rows,
     };
   }
@@ -137,6 +138,9 @@ class AlbumsService {
     };
 
     await this._pool.query(query);
+
+    // 🧹 Hapus cache karena data berubah
+    await this._cacheService.delete(`album_likes:${albumId}`);
   }
 
   async removeAlbumLike(userId, albumId) {
@@ -149,19 +153,41 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError("Like tidak ditemukan");
     }
+
+    // 🧹 Hapus cache karena data berubah
+    await this._cacheService.delete(`album_likes:${albumId}`);
   }
 
   async getAlbumLikes(albumId) {
-    const query = {
-      text: "SELECT COUNT(*) AS likes FROM user_album_likes WHERE album_id = $1",
-      values: [albumId],
-    };
+    try {
+      // 🔍 Cek dari cache Redis dulu
+      const result = await this._cacheService.get(`album_likes:${albumId}`);
+      return {
+        likes: JSON.parse(result),
+        source: "cache",
+      };
+    } catch (error) {
+      // ❌ Kalau belum ada di cache, ambil dari database
+      const query = {
+        text: "SELECT COUNT(*) AS likes FROM user_album_likes WHERE album_id = $1",
+        values: [albumId],
+      };
 
-    const result = await this._pool.query(query);
-    return {
-      likes: parseInt(result.rows[0].likes, 10),
-      source: "db",
-    };
+      const result = await this._pool.query(query);
+      const likes = parseInt(result.rows[0].likes, 10);
+
+      // 💾 Simpan ke Redis selama 30 menit (1800 detik)
+      await this._cacheService.set(
+        `album_likes:${albumId}`,
+        JSON.stringify(likes),
+        1800
+      );
+
+      return {
+        likes,
+        source: "db",
+      };
+    }
   }
 }
 

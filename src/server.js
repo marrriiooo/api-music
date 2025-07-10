@@ -39,9 +39,13 @@ const ClientError = require("./exceptions/ClientError");
 // storege
 const StorageService = require("./services/storage/StorageService");
 
+// cache service
+const CacheService = require("./redis/cacheService");
+const cacheService = new CacheService();
+
 const init = async () => {
   const playlistsService = new PlaylistsService(); // tanpa collaborationsService
-  const albumsService = new AlbumsService();
+  const albumsService = new AlbumsService(cacheService);
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();

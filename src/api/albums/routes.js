@@ -47,8 +47,11 @@ const routes = (handler) => [
         multipart: true,
         output: "stream",
         maxBytes: 512000, // 500 KB
+        failAction: (request, h, err) => {
+          throw err;
+        },
       },
-      auth: false, // atau `auth: 'openmusic_jwt'` jika perlu login
+      auth: false, // atau sesuaikan dengan kebutuhan
     },
   },
 ];
