@@ -1,35 +1,39 @@
 const redis = require("redis");
+const config = require("../../utils/config");
 
 class CacheService {
   constructor() {
     this._client = redis.createClient({
       socket: {
-        host: process.env.REDIS_SERVER,
-        port: 6379, // pastikan ini ditambahkan
+        host: config.redis.host,
       },
     });
 
-    this._client.on("error", (err) => {
-      console.error("Redis error:", err);
+    this._client.on("error", (error) => {
+      console.error(error);
     });
 
     this._client.connect();
   }
 
   async set(key, value, expirationInSecond = 1800) {
-    await this._client.set(key, JSON.stringify(value), {
+    await this._client.set(key, value, {
       EX: expirationInSecond,
     });
   }
 
   async get(key) {
     const result = await this._client.get(key);
-    if (!result) throw new Error("Cache tidak ditemukan");
-    return JSON.parse(result);
+
+    if (result === null) {
+      throw new Error("Cache tidak ditemukan");
+    }
+
+    return result;
   }
 
   async delete(key) {
-    await this._client.del(key);
+    return this._client.del(key);
   }
 }
 

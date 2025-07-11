@@ -42,7 +42,7 @@ const ClientError = require("./exceptions/ClientError");
 const StorageService = require("./services/storage/StorageService");
 
 // cache service
-const CacheService = require("./redis/cacheService");
+const CacheService = require("./services/redis/cacheService");
 const cacheService = new CacheService();
 
 const init = async () => {
