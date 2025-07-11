@@ -5,73 +5,69 @@ const Jwt = require("@hapi/jwt");
 const Inert = require("@hapi/inert");
 const path = require("path");
 
-// albums dan songs
+// === Import API Plugins ===
 const albums = require("./api/albums");
 const songs = require("./api/songs");
-
-// users
 const users = require("./api/users");
 const authentications = require("./api/authentications");
 const playlists = require("./api/playlists");
+const exportsPlugin = require("./api/exports");
+const uploads = require("./api/uploads");
 
-// services
+// === Import Services ===
 const AlbumsService = require("./services/postgres/AlbumsService");
 const SongsService = require("./services/postgres/SongsService");
 const UsersService = require("./services/postgres/UsersService");
 const AuthenticationsService = require("./services/postgres/AuthenticationsService");
 const PlaylistsService = require("./services/postgres/PlaylistsService");
+const ProducerService = require("./services/rabbitmq/ProducerService");
+const StorageService = require("./services/storage/StorageService");
+const CacheService = require("./services/redis/cacheService");
 
-// validator
+// === Import Validators ===
 const UsersValidator = require("./validator/users");
 const AuthenticationsValidator = require("./validator/authentications");
 const PlaylistsValidator = require("./validator/playlists");
 const ExportsValidator = require("./validator/exports");
-const AlbumsValidator = require("./validator/albums");
+const UploadsValidator = require("./validator/uploads");
 
-// exports
-const ExportsPlugin = require("./api/exports");
-const ProducerService = require("./services/rabbitmq/ProducerService");
-
-// tokenize
+// === Token Manager ===
 const TokenManager = require("./tokenize/TokenManager");
 
-// exceptions
+// === Exception Handling ===
 const ClientError = require("./exceptions/ClientError");
 
-// storege
-const StorageService = require("./services/storage/StorageService");
-
-// cache service
-const CacheService = require("./services/redis/cacheService");
-const cacheService = new CacheService();
-
 const init = async () => {
-  const playlistsService = new PlaylistsService(); // tanpa collaborationsService
+  // === Inisialisasi Service ===
+  const cacheService = new CacheService(); // Bisa diintegrasikan ke service lain seperti albumsService
+  const playlistsService = new PlaylistsService(); // Tanpa fitur kolaborasi
   const albumsService = new AlbumsService(cacheService);
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
-  const storageService = new StorageService();
+  const producerService = new ProducerService();
+  const storageService = new StorageService(
+    path.resolve(__dirname, "api/uploads/file/covers")
+  );
 
+  // === Buat server Hapi ===
   const server = Hapi.server({
     port: process.env.PORT || 5000,
     host: process.env.HOST || "localhost",
     routes: {
       cors: {
-        origin: ["*"],
+        origin: ["*"], // Mengizinkan semua origin (CORS)
       },
     },
   });
 
-  // registrasi plugin eksternal
+  // === Register Plugin Eksternal ===
   await server.register([
-    {
-      plugin: Jwt,
-    },
-    Inert,
+    { plugin: Jwt }, // Plugin JWT untuk autentikasi
+    { plugin: Inert }, // Plugin untuk file handling (static files, upload)
   ]);
 
-  // mendefinisikan strategy autentikasi jwt
+  // === Definisikan Strategi Autentikasi ===
   server.auth.strategy("openmusic_jwt", "jwt", {
     keys: process.env.ACCESS_TOKEN_KEY,
     verify: {
@@ -87,25 +83,13 @@ const init = async () => {
       },
     }),
   });
-  // Route untuk melayani file static cover
-  server.route({
-    method: "GET",
-    path: "/cover/images/{param*}",
-    handler: {
-      directory: {
-        path: path.resolve(__dirname, "cover/images"), // pastikan sesuai folder
-        listing: false,
-      },
-    },
-  });
 
+  // === Register Plugin Internal ===
   await server.register([
     {
       plugin: albums,
       options: {
         service: albumsService,
-        storageService: storageService,
-        validator: AlbumsValidator,
       },
     },
     {
@@ -139,21 +123,29 @@ const init = async () => {
       },
     },
     {
-      plugin: ExportsPlugin,
+      plugin: exportsPlugin,
       options: {
-        service: ProducerService,
+        service: producerService,
         playlistsService,
         validator: ExportsValidator,
       },
     },
+    {
+      plugin: uploads,
+      options: {
+        storageService,
+        albumsService,
+        validator: UploadsValidator,
+      },
+    },
   ]);
 
-  // Error handling
+  // === Global Error Handling ===
   server.ext("onPreResponse", (request, h) => {
     const { response } = request;
 
     if (response instanceof Error) {
-      // Penanganan client error secara internal
+      // Tangani ClientError buatan sendiri
       if (response instanceof ClientError) {
         const newResponse = h.response({
           status: "fail",
@@ -163,12 +155,10 @@ const init = async () => {
         return newResponse;
       }
 
-      // Mempertahankan penanganan client error oleh Hapi secara native
-      if (!response.isServer) {
-        return h.continue;
-      }
+      // Tangani error bawaan non-server
+      if (!response.isServer) return h.continue;
 
-      // Penanganan server error sesuai kebutuhan
+      // Tangani Server Error
       const newResponse = h.response({
         status: "error",
         message: "Terjadi kegagalan pada server kami",
@@ -177,17 +167,20 @@ const init = async () => {
       return newResponse;
     }
 
-    // Jika bukan error, lanjutkan dengan response sebelumnya
+    // Jika bukan error, lanjutkan response seperti biasa
     return h.continue;
   });
 
+  // === Jalankan Server ===
   await server.start();
-  console.log(`Server berjalan pada ${server.info.uri}`);
+  console.log(`🚀 Server berjalan pada ${server.info.uri}`);
 };
 
+// === Penanganan Unhandled Promise Error ===
 process.on("unhandledRejection", (err) => {
   console.log(err);
   process.exit(1);
 });
 
+// === Mulai Aplikasi ===
 init();

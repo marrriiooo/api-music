@@ -1,40 +1,59 @@
 const autoBind = require("auto-bind");
+const ClientError = require("../../exceptions/ClientError");
 
 class ExportsHandler {
-  constructor(producerService, playlistsService, validator) {
-    this._producerService = producerService;
+  constructor(service, playlistsService, validator) {
+    this._service = service;
     this._playlistsService = playlistsService;
     this._validator = validator;
 
     autoBind(this);
   }
 
-  async postExportPlaylistHandler(request, h) {
-    this._validator.validateExportPlaylistPayload(request.payload);
-    const { id: credentialId } = request.auth.credentials;
-    const { playlistId } = request.params;
-    const { targetEmail } = request.payload;
+  async postExportPlaylistsHandler(request, h) {
+    try {
+      this._validator.validateExportPlaylistsPayload(request.payload);
 
-    // ✅ Verifikasi kepemilikan playlist
-    await this._playlistsService.verifyPlaylistOwner(playlistId, credentialId);
+      const { id: playlistId } = request.params;
+      const { targetEmail } = request.payload;
+      const { id: userId } = request.auth.credentials;
 
-    // ✅ Kirim ke RabbitMQ
-    const message = {
-      playlistId,
-      targetEmail,
-    };
+      await this._playlistsService.verifyPlaylistOwner(playlistId, userId);
 
-    await this._producerService.sendMessage(
-      "export:playlists",
-      JSON.stringify(message)
-    );
+      const message = {
+        playlistId,
+        targetEmail,
+      };
 
-    return h
-      .response({
-        status: "success",
-        message: "Permintaan Anda sedang kami proses",
-      })
-      .code(201);
+      await this._service.sendMessage(
+        "export:playlists",
+        JSON.stringify(message)
+      );
+
+      return h
+        .response({
+          status: "success",
+          message: "Permintaan sedang kami proses",
+        })
+        .code(201);
+    } catch (error) {
+      if (error instanceof ClientError) {
+        return h
+          .response({
+            status: "fail",
+            message: error.message,
+          })
+          .code(error.statusCode);
+      }
+
+      console.error(error);
+      return h
+        .response({
+          status: "error",
+          message: "Maaf, terjadi kegagalan pada server kami.",
+        })
+        .code(500);
+    }
   }
 }
 

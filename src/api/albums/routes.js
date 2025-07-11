@@ -28,35 +28,16 @@ const routes = (handler) => [
     },
   },
   {
-    method: "DELETE",
-    path: "/albums/{id}/likes",
-    handler: handler.deleteAlbumLikeHandler,
-    options: {
-      auth: "openmusic_jwt",
-    },
-  },
-  {
     method: "GET",
     path: "/albums/{id}/likes",
     handler: handler.getAlbumLikesHandler,
   },
   {
-    method: "POST",
-    path: "/albums/{id}/covers",
-    handler: handler.postUploadCoverHandler,
+    method: "DELETE",
+    path: "/albums/{id}/likes",
+    handler: handler.deleteAlbumLikeHandler,
     options: {
-      payload: {
-        allow: ["multipart/form-data"],
-        multipart: true,
-        output: "stream",
-        parse: true,
-        maxBytes: 512000,
-        failAction: (request, h, err) => {
-          console.error("Upload error:", err.message);
-          throw err;
-        },
-      },
-      auth: false,
+      auth: "openmusic_jwt",
     },
   },
 ];

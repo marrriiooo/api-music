@@ -1,26 +1,26 @@
-// src/services/storage/StorageService.js
 const fs = require("fs");
 const path = require("path");
+const { nanoid } = require("nanoid");
 
 class StorageService {
-  constructor() {
-    this._folder = path.resolve(__dirname, "..", "..", "..", "cover", "images");
+  constructor(folder) {
+    this._folder = folder;
 
-    // Buat folder jika belum ada
-    if (!fs.existsSync(this._folder)) {
-      fs.mkdirSync(this._folder, { recursive: true });
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
     }
   }
 
   writeFile(file, meta) {
-    const filename = `${+new Date()}-${meta.filename}`;
-    const pathWrite = path.resolve(this._folder, filename);
-    const fileStream = fs.createWriteStream(pathWrite);
+    const filename = `${nanoid(16)}-${meta.filename}`;
+    const filePath = path.resolve(this._folder, filename);
+
+    const fileStream = fs.createWriteStream(filePath);
 
     return new Promise((resolve, reject) => {
+      fileStream.on("error", (error) => reject(error));
       file.pipe(fileStream);
       file.on("end", () => resolve(filename));
-      file.on("error", (error) => reject(error));
     });
   }
 }
