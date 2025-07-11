@@ -12,7 +12,7 @@ class ExportsHandler {
 
   async postExportPlaylistsHandler(request, h) {
     try {
-      this._validator.validateExportPlaylistsPayload(request.payload);
+      this._validator.validateExportPlaylistPayload(request.payload);
 
       const { id: playlistId } = request.params;
       const { targetEmail } = request.payload;
