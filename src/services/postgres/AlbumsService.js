@@ -3,6 +3,8 @@ const { nanoid } = require("nanoid");
 const InvariantError = require("../../exceptions/InvariantError");
 const NotFoundError = require("../../exceptions/NotFoundError");
 
+// meperbarui revisii
+
 class AlbumsService {
   constructor(cacheService) {
     this._pool = new Pool();
@@ -110,6 +112,8 @@ class AlbumsService {
       );
     }
   }
+
+  // ..
   async verifyAlbumExists(albumId) {
     const query = {
       text: "SELECT id FROM albums WHERE id = $1",
